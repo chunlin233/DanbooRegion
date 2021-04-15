@@ -3,7 +3,11 @@ import cv2
 import os
 import shutil
 import numpy as np
+
 import tensorflow as tf
+# import tensorflow.compat.v1 as tf
+# tf.compat.v1.disable_eager_execution()
+
 import keras
 from model import *
 import time

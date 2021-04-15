@@ -1,9 +1,13 @@
-from keras.layers import Conv2D, Activation, Input, Concatenate, LeakyReLU, Lambda, AveragePooling2D, UpSampling2D, Convolution2D, BatchNormalization, Deconvolution2D, Add
+from keras.layers import Conv2D, Activation, Input, Concatenate, LeakyReLU, Lambda, AveragePooling2D, UpSampling2D, Convolution2D, BatchNormalization, Add
+from keras.layers import Deconvolution2D
+# from keras.layers import Conv2DTranspose
 from keras.models import Model
 
 import tensorflow as tf
+# import tensorflow.compat.v1 as tf
+# tf.compat.v1.disable_eager_execution()
 
-
+# vector_net：DanbooRegion2020UNet
 def make_diff_net():
 
     def conv(x, filters, name):
@@ -16,10 +20,12 @@ def make_diff_net():
         return LeakyReLU(alpha=0.1)(x)
 
     def r_block(x, filters, name=None):
+        # 两层3x3 conv
         return relu(conv(relu(conv(x, filters, None if name is None else name + '_c1')), filters,
                          None if name is None else name + '_c2'))
 
     def cat(a, b):
+        # a上采样之后和 b concat
         return Concatenate()([UpSampling2D((2, 2))(a), b])
 
     def dog(x):
@@ -66,7 +72,7 @@ def make_diff_net():
 
     return Model(inputs=ip, outputs=op)
 
-
+# discriminator
 def make_cnet512():
 
     def conv(x, filters, strides=(1, 1), kernel_size=(3, 3)):

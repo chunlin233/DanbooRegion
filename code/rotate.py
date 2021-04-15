@@ -3,6 +3,74 @@ import cv2
 import numpy as np
 
 
+# def rotate_image(image, image_center, angle):
+#     """
+#     Rotates an OpenCV 2 / NumPy image about it's centre by the given angle
+#     (in degrees). The returned image will be large enough to hold the entire
+#     new image, with a black background
+#     """
+
+#     # Get the image size
+#     # No that's not an error - NumPy stores image matricies backwards
+#     image_size = (image.shape[1], image.shape[0])
+#     image_center = tuple(np.array(image_size) / 2)
+
+#     # Convert the OpenCV 3x2 rotation matrix to 3x3
+#     rot_mat = np.vstack(
+#         [cv2.getRotationMatrix2D(image_center, angle, 1.0), [0, 0, 1]]
+#     )
+
+#     rot_mat_notranslate = np.matrix(rot_mat[0:2, 0:2])
+
+#     # Shorthand for below calcs
+#     image_w2 = image_size[0] * 0.5
+#     image_h2 = image_size[1] * 0.5
+
+#     # Obtain the rotated coordinates of the image corners
+#     rotated_coords = [
+#         (np.array([-image_w2,  image_h2]) * rot_mat_notranslate).A[0],
+#         (np.array([ image_w2,  image_h2]) * rot_mat_notranslate).A[0],
+#         (np.array([-image_w2, -image_h2]) * rot_mat_notranslate).A[0],
+#         (np.array([ image_w2, -image_h2]) * rot_mat_notranslate).A[0]
+#     ]
+
+#     # Find the size of the new image
+#     x_coords = [pt[0] for pt in rotated_coords]
+#     x_pos = [x for x in x_coords if x > 0]
+#     x_neg = [x for x in x_coords if x < 0]
+
+#     y_coords = [pt[1] for pt in rotated_coords]
+#     y_pos = [y for y in y_coords if y > 0]
+#     y_neg = [y for y in y_coords if y < 0]
+
+#     right_bound = max(x_pos)
+#     left_bound = min(x_neg)
+#     top_bound = max(y_pos)
+#     bot_bound = min(y_neg)
+
+#     new_w = int(abs(right_bound - left_bound))
+#     new_h = int(abs(top_bound - bot_bound))
+
+#     # We require a translation matrix to keep the image centred
+#     trans_mat = np.matrix([
+#         [1, 0, int(new_w * 0.5 - image_w2)],
+#         [0, 1, int(new_h * 0.5 - image_h2)],
+#         [0, 0, 1]
+#     ])
+
+#     # Compute the tranform for the combined rotation and translation
+#     affine_mat = (np.matrix(trans_mat) * np.matrix(rot_mat))[0:2, :]
+
+#     # Apply the transform
+#     result = cv2.warpAffine(
+#         image,
+#         affine_mat,
+#         (new_w, new_h),
+#         flags=cv2.INTER_LINEAR
+#     )
+
+#     return result
+
 def rotate_image(image, angle):
     """
     Rotates an OpenCV 2 / NumPy image about it's centre by the given angle
@@ -13,48 +81,32 @@ def rotate_image(image, angle):
     # Get the image size
     # No that's not an error - NumPy stores image matricies backwards
     image_size = (image.shape[1], image.shape[0])
-    image_center = tuple(np.array(image_size) / 2)
+    rotate_center = tuple(np.array(image_size) / 2)
 
     # Convert the OpenCV 3x2 rotation matrix to 3x3
     rot_mat = np.vstack(
-        [cv2.getRotationMatrix2D(image_center, angle, 1.0), [0, 0, 1]]
+        [cv2.getRotationMatrix2D(rotate_center, angle, 1.0), [0, 0, 1]]
     )
 
     rot_mat_notranslate = np.matrix(rot_mat[0:2, 0:2])
 
     # Shorthand for below calcs
-    image_w2 = image_size[0] * 0.5
-    image_h2 = image_size[1] * 0.5
+    centerx = image.shape[1] * 0.5
+    centery = image.shape[0] * 0.5
 
     # Obtain the rotated coordinates of the image corners
-    rotated_coords = [
-        (np.array([-image_w2,  image_h2]) * rot_mat_notranslate).A[0],
-        (np.array([ image_w2,  image_h2]) * rot_mat_notranslate).A[0],
-        (np.array([-image_w2, -image_h2]) * rot_mat_notranslate).A[0],
-        (np.array([ image_w2, -image_h2]) * rot_mat_notranslate).A[0]
-    ]
+    rotated_coords = np.array([[centerx,  centery], [-centerx,  centery],[centerx,  -centery],[-centerx,  -centery]])
+    rotated_coords = rotated_coords.dot(rot_mat_notranslate)
+    x = rotated_coords[:,0]
+    y = rotated_coords[:,1]
 
-    # Find the size of the new image
-    x_coords = [pt[0] for pt in rotated_coords]
-    x_pos = [x for x in x_coords if x > 0]
-    x_neg = [x for x in x_coords if x < 0]
-
-    y_coords = [pt[1] for pt in rotated_coords]
-    y_pos = [y for y in y_coords if y > 0]
-    y_neg = [y for y in y_coords if y < 0]
-
-    right_bound = max(x_pos)
-    left_bound = min(x_neg)
-    top_bound = max(y_pos)
-    bot_bound = min(y_neg)
-
-    new_w = int(abs(right_bound - left_bound))
-    new_h = int(abs(top_bound - bot_bound))
+    new_w = int(abs(max(x) - min(x)))
+    new_h = int(abs(max(y) - min(y)))
 
     # We require a translation matrix to keep the image centred
     trans_mat = np.matrix([
-        [1, 0, int(new_w * 0.5 - image_w2)],
-        [0, 1, int(new_h * 0.5 - image_h2)],
+        [1, 0, int(new_w/2 - centerx)],
+        [0, 1, int(new_h/2 - centery)],
         [0, 0, 1]
     ])
 
@@ -129,3 +181,15 @@ def crop_around_center(image, width, height):
     y2 = int(image_center[1] + height * 0.5)
 
     return image[y1:y2, x1:x2]
+
+
+if __name__ == '__main__':
+    path = "emilia.jpg"
+    img = cv2.imread(path)
+
+    h, w = img.shape[:2]
+    result = rotate_image(img, 45)
+    cv2.imshow("rotate 45", result)
+    
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()

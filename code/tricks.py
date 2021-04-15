@@ -112,6 +112,7 @@ def trace_all(labeled_array, xs, ys, cs):
 
 
 def find_all(labeled_array):
+    """就是返回每个label对应的点坐标。。实现得很繁琐。 """
     hist_size = int(np.max(labeled_array))
     if hist_size == 0:
         return []
@@ -128,12 +129,14 @@ def find_all(labeled_array):
 
 
 def mk_resize(x, k):
+    """将图片的最小边resize为 k*32，另一长边按比例缩放，再变为128的倍数"""
     if x.shape[0] < x.shape[1]:
         s0 = k
         s1 = int(x.shape[1] * (k / x.shape[0]))
         s1 = s1 - s1 % 128
         _s0 = 32 * s0
         _s1 = int(x.shape[1] * (_s0 / x.shape[0]))
+        # 若_s1是128的倍数，则返回_s1; 否则，若_s1%128<64, 则返回830%128_s1-_s1%128; 若_s1%128>64, 则返回(_s1-_s1%128)+128
         _s1 = (_s1 + 64) - (_s1 + 64) % 128
     else:
         s1 = k
@@ -203,6 +206,7 @@ def sk_resize(x, k):
 
 
 def d_resize(x, d, fac=1.0):
+    """将图片resize为给定的比例: w=d[1], h=d[0]"""
     new_min = min(int(d[1] * fac), int(d[0] * fac))
     raw_min = min(x.shape[0], x.shape[1])
     if new_min < raw_min:
@@ -236,6 +240,7 @@ def s_resize(x, s):
 
 
 def min_resize(x, m):
+    """将图片resize为：最短边为m，长宽比不变的图片"""
     if x.shape[0] < x.shape[1]:
         s0 = m
         s1 = int(float(m) / float(x.shape[0]) * float(x.shape[1]))
@@ -245,8 +250,10 @@ def min_resize(x, m):
     new_max = max(s1, s0)
     raw_max = max(x.shape[0], x.shape[1])
     if new_max < raw_max:
+        # 若resize操作相对于原图是缩小操作
         interpolation = cv2.INTER_AREA
     else:
+        # 若resize操作相对于原图是放大操作
         interpolation = cv2.INTER_LANCZOS4
     y = cv2.resize(x, (s1, s0), interpolation=interpolation)
     return y

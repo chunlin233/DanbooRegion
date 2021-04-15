@@ -43,8 +43,12 @@ def go_refine_sparse(x, sparse_matrix):
     return session.run(tf_sparse_op_H, feed_dict={ipsp3: x[:, :, None], ipsp9: sparse_matrix})[:, :, 0]
 
 
-session = tf.Session()
+config = tf.ConfigProto()
+config.gpu_options.allow_growth=True
+session = tf.Session(config=config)
+# session = tf.Session()
 K.set_session(session)
+# tf.compat.v1.keras.backend.set_session(session)
 
 ip3 = tf.placeholder(dtype=tf.float32, shape=(None, None, None, 3))
 
@@ -55,15 +59,15 @@ ipsp9 = tf.placeholder(dtype=tf.float32, shape=(None, None, 5, 1))
 ipsp3 = tf.placeholder(dtype=tf.float32, shape=(None, None, 1))
 tf_sparse_op_H = build_repeat_mulsep(ipsp3, ipsp9, 256)
 
-srcnn = load_model('srcnn.net')
+srcnn = load_model('model/srcnn.h5')
 pads = 7
 srcnn_op = srcnn(tf.pad(ip3 / 255.0, [[0, 0], [pads, pads], [pads, pads], [0, 0]], 'REFLECT'))[:, pads * 2:-pads * 2, pads * 2:-pads * 2, :][:, 1:-1, 1:-1, :] * 255.0
 
 session.run(tf.global_variables_initializer())
 
 print('begin load')
-vector.load_weights('DanbooRegion2020UNet.net')
-srcnn.load_weights('srcnn.net')
+vector.load_weights('./model/DanbooRegion2020UNet.h5')
+srcnn.load_weights('./model/srcnn.h5')
 
 
 def go_vector(x):
